@@ -1,10 +1,10 @@
 // pages/admin/approval.tsx
 
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext'; // <-- HARUS INI
+import { useAuth } from '../../contexts/AuthContext'; // <-- GANTI DARI @/ KE INI
 
 import { useRouter } from 'next/router';
-import { fetchAllUsers, updateUserApproval, UserProfile } from '../../utils/admin'; // <-- HARUS INI
+import { fetchAllUsers, updateUserApproval, UserProfile } from '../../utils/admin'; // <-- GANTI DARI @/ KE INI
 
 
 // --- Komponen Form Detail Approval ---
