@@ -115,8 +115,7 @@ const DashboardPage = () => {
             return;
         }
 
-        // Redirect segera, AuthContext akan menangani cleanup
-        router.push('/'); 
+        router.push('/'); // Redirect setelah sukses
     };
 
     // 1. Loading
