@@ -6,14 +6,15 @@ import { useRouter } from 'next/router';
 import { signOut } from '../utils/auth';
 import { fetchLogData } from '../utils/monitoring'; 
 import { fetchTasks } from '../utils/task'; 
+import { fetchAllUsers } from '../utils/admin'; // <--- IMPORT BARU
 
-// ******************* Komponen Contoh Role-Specific *******************
+// ******************* Komponen Role-Specific (Admin & User) *******************
 
 const AdminView: React.FC = () => {
     const [tasks, setTasks] = useState<any[]>([]);
     
     useEffect(() => {
-        // Sebagai Admin, fetchTasks akan mengembalikan SEMUA task
+        // Asumsi: Admin dapat melihat SEMUA data (RLS bekerja di background)
         fetchTasks().then(setTasks);
     }, []);
 
@@ -23,7 +24,7 @@ const AdminView: React.FC = () => {
             <p>Admin dapat melihat dan mengelola **SEMUA** Tugas/Komando di sistem.</p>
             <h4>Daftar Tugas (Global): {tasks.length}</h4>
             <ul>
-                {tasks.map(t => <li key={t.id}>[{t.status}] {t.title} (Oleh: {t.profiles?.full_name || 'N/A'})</li>)}
+                {tasks.map(t => <li key={t.id}>[{t.status}] {t.title} (Dibuat: {t.created_by})</li>)}
             </ul>
         </div>
     );
@@ -34,8 +35,8 @@ const UserView: React.FC = () => {
     const [assignedTasks, setAssignedTasks] = useState<any[]>([]);
 
     useEffect(() => {
+        // Asumsi: Hanya user yang di-approve yang bisa fetch data
         fetchLogData().then(setLogData);
-        // Sebagai User, fetchTasks akan difilter oleh RLS untuk hanya tugas yang relevan
         fetchTasks().then(setAssignedTasks); 
     }, []);
 
@@ -57,45 +58,38 @@ const UserView: React.FC = () => {
     );
 };
 
+// --- Komponen Pesan Not Approved ---
+const NotApprovedView: React.FC = () => (
+    <div style={{ border: '2px solid orange', padding: '20px', textAlign: 'center' }}>
+        <h2>⏳ Akses Dibatasi - Menunggu Approval Admin</h2>
+        <p>Akun Anda telah berhasil terdaftar, tetapi akses ke fitur Monitoring dan Controlling ditangguhkan sampai disetujui oleh Admin internal.</p>
+    </div>
+);
 
-// ******************* Komponen Utama Dashboard *******************
+// --- Komponen Lonceng Notifikasi (Hanya Admin) ---
+const AdminNotification: React.FC = () => {
+    const [pendingCount, setPendingCount] = useState(0);
+    const router = useRouter(); 
 
-const DashboardPage = () => {
-    const { user, role, isLoading } = useAuth();
-    const router = useRouter();
-
-    const handleSignOut = async () => {
-        await signOut();
-        router.push('/'); // Redirect ke halaman login setelah Sign Out
+    const checkPending = async () => {
+        const users = await fetchAllUsers();
+        // Hitung pengguna yang role-nya 'user' dan belum disetujui
+        const pending = users.filter(u => u.role === 'user' && u.is_approved === false); 
+        setPendingCount(pending.length);
     };
 
-    // 1. Loading
-    if (isLoading) {
-        return <div>Memuat data pengguna dan role...</div>;
-    }
+    useEffect(() => {
+        checkPending();
+        // Polling setiap 30 detik untuk update notifikasi
+        const interval = setInterval(checkPending, 30000); 
+        return () => clearInterval(interval);
+    }, []);
 
-    // 2. Not Logged In (Redirect)
-    if (!user) {
-        router.push('/'); 
-        return null; 
-    }
+    if (pendingCount === 0) return null;
 
-    // 3. Logged In, Tampilkan Dashboard berdasarkan Role
     return (
-        <div style={{ padding: '20px' }}>
-            <h1>Sistem Monitoring & Controlling Internal</h1>
-            <p>Selamat datang, **{user.email}**! Role Anda: **{role?.toUpperCase() ?? 'Loading Role...'}**</p>
-            <button onClick={handleSignOut} style={{ padding: '10px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                Keluar / Sign Out
-            </button>
-
-            <hr style={{ margin: '20px 0' }}/>
-
-            {role === 'admin' && <AdminView />}
-            {role === 'user' && <UserView />}
-            {(role !== 'admin' && role !== 'user') && <p>Role tidak terdeteksi atau tidak valid. Harap hubungi Admin.</p>}
-        </div>
-    );
-};
-
-export default DashboardPage;
+        <div style={{ marginLeft: '20px', position: 'relative' }}>
+            <button 
+                onClick={() => router.push('/admin/approval')} // Navigasi ke halaman approval
+                style={{ 
+                    background: 'red', color: 'white', bo
