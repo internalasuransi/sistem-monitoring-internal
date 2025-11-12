@@ -1,12 +1,10 @@
 // pages/admin/approval.tsx
 
 import React, { useEffect, useState } from 'react';
-// GANTI: import { useAuth } from '@/contexts/AuthContext';
-import { useAuth } from '../../contexts/AuthContext'; // <-- HARUS DUA TITIK
+import { useAuth } from '../../contexts/AuthContext'; // <-- HARUS INI
 
 import { useRouter } from 'next/router';
-// GANTI: import { fetchAllUsers, updateUserApproval, UserProfile } from '@/utils/admin';
-import { fetchAllUsers, updateUserApproval, UserProfile } from '../../utils/admin'; // <-- HARUS DUA TITIK
+import { fetchAllUsers, updateUserApproval, UserProfile } from '../../utils/admin'; // <-- HARUS INI
 
 
 // --- Komponen Form Detail Approval ---
