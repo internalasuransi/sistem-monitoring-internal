@@ -1,9 +1,14 @@
 // pages/admin/approval.tsx
 
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext'; // Asumsi Anda menggunakan path alias @
+// GANTI: import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext'; // <-- HARUS DUA TITIK
+
 import { useRouter } from 'next/router';
-import { fetchAllUsers, updateUserApproval, UserProfile } from '@/utils/admin'; // Asumsi Anda menggunakan path alias @
+// GANTI: import { fetchAllUsers, updateUserApproval, UserProfile } from '@/utils/admin';
+import { fetchAllUsers, updateUserApproval, UserProfile } from '../../utils/admin'; // <-- HARUS DUA TITIK
+
+
 // --- Komponen Form Detail Approval ---
 const UserApprovalForm: React.FC<{ user: UserProfile, onAction: (isApprove: boolean, role: string) => void, onClose: () => void }> = ({ user, onAction, onClose }) => {
     const [selectedRole, setSelectedRole] = useState(user.role);
