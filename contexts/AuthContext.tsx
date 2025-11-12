@@ -3,12 +3,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { User } from '@supabase/supabase-js';
-import { fetchUserRole } from '../utils/auth';
+import { fetchUserRole } from '../utils/auth'; // fetchUserRole harus sudah diupdate di utils/auth.ts
 
 interface AuthContextType {
   user: User | null;
-  role: string | null; // Role: 'admin' atau 'user'
-  isLoading: boolean; // Status loading saat cek sesi awal
+  role: string | null;
+  isLoading: boolean;
+  isApproved: boolean | null; // <-- BARU: Status Approval
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -16,58 +17,27 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<string | null>(null);
+  const [isApproved, setIsApproved] = useState<boolean | null>(null); // <-- BARU
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Fungsi untuk mendapatkan sesi & role saat aplikasi pertama kali dimuat
-    const getInitialUser = async () => {
-        const { data: { user: initialUser } } = await supabase.auth.getUser();
-        setUser(initialUser);
-        
-        if (initialUser) {
-            const { role: userRole } = await fetchUserRole(initialUser.id);
-            setRole(userRole);
-        }
-        setIsLoading(false);
-    };
-    
-    // Listener untuk mendengarkan perubahan state Auth (Sign In, Sign Out, Refresh Token, dll.)
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        const currentUser = session?.user ?? null;
+    // Fungsi untuk mendapatkan sesi & role saat startup/perubahan state
+    const updateAuthState = async (currentUser: User | null) => {
         setUser(currentUser);
 
         if (currentUser) {
-          // Panggil fungsi dari Step 5
-          const { role: userRole } = await fetchUserRole(currentUser.id);
-          setRole(userRole);
+            // Panggil fungsi yang sudah diupdate (dari utils/auth.ts)
+            const { role: userRole, isApproved: approvalStatus } = await fetchUserRole(currentUser.id);
+            setRole(userRole);
+            setIsApproved(approvalStatus); // <-- SET STATUS APPROVAL
         } else {
-          setRole(null); // Clear role on sign out
+            setRole(null);
+            setIsApproved(null); // <-- RESET STATUS
         }
         setIsLoading(false);
-      }
-    );
+    }
     
-    getInitialUser(); // Jalankan cek awal
-    
-    // Cleanup function
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
-  }, []);
-
-  return (
-    <AuthContext.Provider value={{ user, role, isLoading }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
-
-// Custom hook untuk akses Auth Context
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+    // Logic untuk mendapatkan user saat load pertama (untuk refresh page)
+    const getInitialUser = async () => {
+        setIsLoading(true);
+        const { data: { user } }
